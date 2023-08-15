@@ -2,6 +2,7 @@ import logging
 import pkg_resources
 import json
 from gym.envs.registration import register
+from gym_sokoban.envs.sokoban_env_fast import SokobanEnvFast
 
 logger = logging.getLogger(__name__)
 

@@ -144,7 +144,7 @@ class SokobanEnvFast(gym.Env):
         else:
             shape = state_np.shape[:2]
             agent_pos = np.unravel_index(np.argmax(state_np[..., FieldStates.player] +
-                                                   state_np[..., FieldStates.player_target]), dims=shape)
+                                                   state_np[..., FieldStates.player_target]), shape=shape)
             unmatched_boxes = int(np.sum(state_np[..., FieldStates.box]))
         self._internal_state = HashableState(state_np, agent_pos, unmatched_boxes, fast_eq=self.fast_state_eq)
 
