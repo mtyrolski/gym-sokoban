@@ -3,7 +3,6 @@ import enum
 import random
 
 import gym
-import numba
 import numpy as np
 from gym.spaces import Discrete, Box
 from munch import Munch
@@ -11,12 +10,11 @@ from munch import Munch
 from gym_sokoban.envs.sokoban_env import SokobanEnv
 import pkg_resources
 from PIL import Image
-import gin
 
 RENDERING_MODES = ['one_hot', 'rgb_array', 'tiny_rgb_array']
 
 
-@gin.configurable
+
 class SokobanEnvFast(gym.Env):
     metadata = {
         'render.modes': RENDERING_MODES
@@ -159,9 +157,7 @@ class FieldStates(enum.IntEnum):
     player_target = 6
 
 
-@numba.jit(nopython=True)
 def step(state, action, penalty_for_step, reward_box_on_target, reward_finished):
-    # Copy to be supported by numba. Possibly can be done better
     # wall = 0
     empty = 1
     target = 2
@@ -296,7 +292,7 @@ def one_hot(a, num_classes):
     return np.squeeze(np.eye(num_classes, dtype=np.uint8)[a.reshape(-1)]).reshape(a.shape + (num_classes,))
 
 
-@gin.configurable
+
 def sokoban_hindsight(history, solved, intensity, include_original_board=False):
     if solved or random.random() > intensity:
         return history, {'hindsight_solved': solved}
