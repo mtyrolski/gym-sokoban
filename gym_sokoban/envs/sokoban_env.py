@@ -6,7 +6,6 @@ from gym.utils import seeding
 from gym.spaces.discrete import Discrete
 from gym.spaces import Box
 
-from gym_sokoban import logger
 from .room_utils import SokobanRoomGenerator
 from .render_utils import room_to_rgb, room_to_tiny_world_rgb, room_to_one_hot, room_to_binary_map
 import numpy as np
@@ -49,8 +48,6 @@ class SokobanEnv(gym.Env):
                  ):
         assert game_mode in ["NoAlice", "Alice", "Magnetic"], "Incorrect game format!"
         assert reward_shaping in ['dense', 'sparse'], 'Incorrect reward shaping mode!'
-        logger.info('Creating SokobanEnv')
-        logger.info('Game format: {}'.format(game_mode))
 
         self.game_mode = game_mode
         self.verbose = verbose

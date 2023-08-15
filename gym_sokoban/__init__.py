@@ -4,7 +4,6 @@ import json
 from gym.envs.registration import register
 from gym_sokoban.envs.sokoban_env_fast import SokobanEnvFast
 
-logger = logging.getLogger(__name__)
 
 resource_package = __name__
 env_json = pkg_resources.resource_filename(resource_package, '/'.join(('envs', 'available_envs.json')))
