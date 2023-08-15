@@ -23,11 +23,14 @@ if platform == "linux" or platform == "linux2":
       lib_path = os.path.dirname(os.path.abspath(__file__))
       command = "cd {};g++ -std=c++11 -c -fPIC -O3 room_utils_fast.cpp -o room_utils_fast.o".format(lib_path)
       os.system(command)
+      print("compilation done")
       command = "cd {};g++ -shared -Wl,-soname,room_utils_fast.so -o room_utils_fast.so room_utils_fast.o".format(lib_path)
       os.system(command)
+      print("shared library created")
       # Try once more
       lib_filename = pkg_resources.resource_filename(__name__, './room_utils_fast.' + ext)
       lib = cdll.LoadLibrary(lib_filename)
+      print("loading second time")
 
 elif platform == "darwin":
     ext = 'dylib'
