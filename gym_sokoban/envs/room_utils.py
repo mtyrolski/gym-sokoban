@@ -1,23 +1,17 @@
 import copy
 from ctypes import c_double, c_int, c_uint, c_bool, cdll, byref, POINTER
+import hashlib
+import struct
+from typing import List, Optional, Union
 import pkg_resources
 import numpy as np
 import numpy.ctypeslib as npct
-from gym.utils.seeding import _int_list_from_bigint, hash_seed
 import os
+
 
 from sys import platform
 
 if platform == "linux" or platform == "linux2":
-    try:
-        from awarelib.distributed_utils import get_mpi_rank_or_0
-        if get_mpi_rank_or_0() != 0:
-          #This is a hack to let the rank 0 node to compile
-          import time
-          time.sleep(60)
-    except ImportError:
-        pass
-
     try:
       ext = 'so'
       lib_filename = pkg_resources.resource_filename(__name__, './room_utils_fast.' + ext)
@@ -50,6 +44,82 @@ lib.generate_room.argtypes = [npct.ndpointer(dtype=np.uint8, ndim=1),  # room
                               c_bool,  # do_reverse_playing
                               c_bool,
                               c_int]  # second_player
+
+
+
+def hash_seed(seed: Optional[int] = None, max_bytes: int = 8) -> int:
+    """Any given evaluation is likely to have many PRNG's active at once.
+    (Most commonly, because the environment is running in multiple processes.)
+    There's literature indicating that having linear correlations between seeds of multiple PRNG's can correlate the outputs:
+        http://blogs.unity3d.com/2015/01/07/a-primer-on-repeatable-random-numbers/
+        http://stackoverflow.com/questions/1554958/how-different-do-random-seeds-need-to-be
+        http://dl.acm.org/citation.cfm?id=1276928
+    Thus, for sanity we hash the seeds before using them. (This scheme is likely not crypto-strength, but it should be good enough to get rid of simple correlations.)
+    Args:
+        seed: None seeds from an operating system specific randomness source.
+        max_bytes: Maximum number of bytes to use in the hashed seed.
+    Returns:
+        The hashed seed
+    """
+
+    if seed is None:
+        seed = create_seed(max_bytes=max_bytes)
+    hash = hashlib.sha512(str(seed).encode("utf8")).digest()
+    return _bigint_from_bytes(hash[:max_bytes])
+
+
+def create_seed(a: Optional[Union[int, str]] = None, max_bytes: int = 8) -> int:
+    """Create a strong random seed.
+    Otherwise, Python 2 would seed using the system time, which might be non-robust especially in the presence of concurrency.
+    Args:
+        a: None seeds from an operating system specific randomness source.
+        max_bytes: Maximum number of bytes to use in the seed.
+    Returns:
+        A seed
+    Raises:
+        Error: Invalid type for seed, expects None or str or int
+    """
+
+    # Adapted from https://svn.python.org/projects/python/tags/r32/Lib/random.py
+    if a is None:
+        a = _bigint_from_bytes(os.urandom(max_bytes))
+    elif isinstance(a, str):
+        bt = a.encode("utf8")
+        bt += hashlib.sha512(bt).digest()
+        a = _bigint_from_bytes(bt[:max_bytes])
+    elif isinstance(a, int):
+        a = int(a % 2 ** (8 * max_bytes))
+    else:
+        raise Exception(f"Invalid type for seed: {type(a)} ({a})")
+
+    return a
+
+
+# TODO: don't hardcode sizeof_int here
+def _bigint_from_bytes(bt: bytes) -> int:
+    sizeof_int = 4
+    padding = sizeof_int - len(bt) % sizeof_int
+    bt += b"\0" * padding
+    int_count = int(len(bt) / sizeof_int)
+    unpacked = struct.unpack(f"{int_count}I", bt)
+    accum = 0
+    for i, val in enumerate(unpacked):
+        accum += 2 ** (sizeof_int * 8 * i) * val
+    return accum
+
+
+def _int_list_from_bigint(bigint: int) -> List[int]:
+    # Special case 0
+    if bigint < 0:
+        raise Exception(f"Seed must be non-negative, not {bigint}")
+    elif bigint == 0:
+        return [0]
+
+    ints: List[int] = []
+    while bigint > 0:
+        bigint, mod = divmod(bigint, 2**32)
+        ints.append(mod)
+    return ints
 
 class SokobanRoomGenerator(object):
     def __init__(self, seed, game_mode=None, verbose=True):
