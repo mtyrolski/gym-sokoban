@@ -36,6 +36,7 @@ class SokobanEnv(gym.Env):
                  max_steps=np.inf,  # 120
                  num_boxes=4,
                  num_gen_steps=None,
+                 p_change_directions=0.35,
                  game_mode="NoAlice",  # Alice, NoAlice, Magnetic
                  only_push_actions=True,
                  max_distinct_rooms=np.inf,  # INFO: if finite, clone and restore do not reflect num_env_steps
@@ -62,6 +63,8 @@ class SokobanEnv(gym.Env):
         self.num_boxes = num_boxes
         self.boxes_on_target = 0
         self.num_env_steps = 0
+        self.p_change_directions = p_change_directions
+        self.only_push_actions = only_push_actions
 
         # Penalties and Rewards
         self.penalty_for_step = -0.1
@@ -361,6 +364,7 @@ class SokobanEnv(gym.Env):
                     num_boxes=self.num_boxes,
                     second_player=second_player,
                     curriculum=self.curriculum,
+                    p_change_directions=self.p_change_directions
                 )
                 if self.max_distinct_rooms < np.inf:
                     room_to_save = copy.deepcopy((self.room_fixed, self.room_state, self.box_mapping))
