@@ -1,5 +1,7 @@
 from gym_sokoban.envs.room_utils import SokobanRoomGenerator
 from gym_sokoban.envs.sokoban_env import SokobanEnv
+from typing import Any
+import joblib
 from tqdm import tqdm
 import numpy as np
 import joblib
@@ -31,9 +33,19 @@ if __name__ == '__main__':
     parser.add_argument('--num-gen-steps', type=int, default=25)
     parser.add_argument('--curriculum', type=int, default=300)
     parser.add_argument('--p-change-directions', type=float, default=0.35)
+    parser.add_argument('--n-batches', type=int, default=1)
     args = parser.parse_args()
-    main(num_boxes=args.boxes,
-         n_boards=args.n_boards,
-         num_gen_steps=args.num_gen_steps,
-         curriculum=args.curriculum,
-         p_change_directions=args.p_change_directions)
+    
+    if args.n_boards % args.n_batches != 0:
+        raise ValueError(f'Number of boards {args.n_boards} must be divisible by number of batches {args.n_batches}')
+    
+    n_board_per_batch = args.n_boards // args.n_batches
+    print(f'Generating {args.n_boards} boards in {args.n_batches} batches of {n_board_per_batch} boards each')
+    
+    joblib.Parallel(n_jobs=-1, verbose=10)(joblib.delayed(main)(num_boxes=args.boxes,
+                                                    n_boards=n_board_per_batch,
+                                                    num_gen_steps=args.num_gen_steps,
+                                                    curriculum=args.curriculum,
+                                                    p_change_directions=args.p_change_directions)
+                                for _ in range(args.n_batches))
+
