@@ -6,6 +6,7 @@ from tqdm import tqdm
 import numpy as np
 import joblib
 import argparse
+import os
 
 def main(num_boxes, n_boards: int, num_gen_steps: int, curriculum: int, p_change_directions: float):
     env = SokobanEnv(dim_room=(12, 12),
@@ -18,12 +19,12 @@ def main(num_boxes, n_boards: int, num_gen_steps: int, curriculum: int, p_change
     for _ in tqdm(range(n_boards)):
         board = env.reset()
         boards.append(board)
-        
-    boards = np.array(boards)
-    assert boards.shape == (n_boards, 12, 12, 7), boards.shape
+    return boards
+    # boards = np.array(boards)
+    # assert boards.shape == (n_boards, 12, 12, 7), boards.shape
 
-    name = f'boards_{n_boards}_b{num_boxes}_gs{num_gen_steps}_c{curriculum}_p{p_change_directions}.joblib'
-    joblib.dump(boards, name)
+    # name = f'boards_{n_boards}_b{num_boxes}_gs{num_gen_steps}_c{curriculum}_p{p_change_directions}.joblib'
+    # joblib.dump(boards, name)
     
 
 if __name__ == '__main__':
@@ -42,10 +43,19 @@ if __name__ == '__main__':
     n_board_per_batch = args.n_boards // args.n_batches
     print(f'Generating {args.n_boards} boards in {args.n_batches} batches of {n_board_per_batch} boards each')
     
-    joblib.Parallel(n_jobs=-1, verbose=10)(joblib.delayed(main)(num_boxes=args.boxes,
+    total_boards = joblib.Parallel(n_jobs=-1, verbose=10)(joblib.delayed(main)(num_boxes=args.boxes,
                                                     n_boards=n_board_per_batch,
                                                     num_gen_steps=args.num_gen_steps,
                                                     curriculum=args.curriculum,
                                                     p_change_directions=args.p_change_directions)
                                 for _ in range(args.n_batches))
-
+    
+    boards = []
+    for batch in total_boards:
+        boards.extend(batch)
+    boards = np.array(boards)
+    assert boards.shape == (args.n_boards, 12, 12, 7), boards.shape
+    folder_name = f'boards_{args.n_boards}_b{args.num_boxes}_gs{args.num_gen_steps}_c{args.curriculum}_p{args.p_change_directions}'
+    filename = f'{folder_name}.joblib'
+    os.makedirs(folder_name, exist_ok=True)
+    joblib.dump(os.path.join(folder_name, filename), filename)
