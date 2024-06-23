@@ -55,7 +55,7 @@ if __name__ == '__main__':
         boards.extend(batch)
     boards = np.array(boards)
     assert boards.shape == (args.n_boards, 12, 12, 7), boards.shape
-    folder_name = f'boards_{args.n_boards}_b{args.num_boxes}_gs{args.num_gen_steps}_c{args.curriculum}_p{args.p_change_directions}'
+    folder_name = f'boards_{args.n_boards}_b{args.boxes}_gs{args.num_gen_steps}_c{args.curriculum}_p{args.p_change_directions}'
     filename = f'{folder_name}.joblib'
     os.makedirs(folder_name, exist_ok=True)
     joblib.dump(os.path.join(folder_name, filename), filename)
